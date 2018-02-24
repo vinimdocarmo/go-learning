@@ -48,6 +48,8 @@ func (d DecoderSplice) decodeHeader(h *Header) error {
 func newDecoderSplice(filename string) (DecoderSplice, error) {
 	r, err := os.OpenFile(filename, os.O_RDONLY, 0666)
 
+	defer r.Close()
+
 	var ds DecoderSplice
 
 	if err != nil {
