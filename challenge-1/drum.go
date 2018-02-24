@@ -2,30 +2,35 @@
 // See golang-challenge.com/go-challenge1/ for more information
 package drum
 
+import (
+	"fmt"
+)
+
 // Header represents the head of the file
+// Header.Version has 32 bytes
 type Header struct {
-	Splice [6]byte
-	_      [8]byte
+	Splice     [6]byte
+	PatterSize int64
+	Version    string
+	Tempo      float32
 }
 
 // Track is the high level representation of a sound track of an instrument
 type Track struct {
-	ID         [1]byte
-	Instrument [10]byte
+	ID         int8
+	NameLength int32
+	Instrument string
 	Quarters   [4][4]byte
 }
 
 // Pattern is the high level representation of the
 // drum pattern contained in a .splice file.
 type Pattern struct {
-	Header  Header
-	Version [11]byte
-	_       [25]byte //tempo ta por aqui
-	Tracks  [4]Track
+	Header Header
+	Tracks []Track
 }
 
 // Format formats the splice file pattern to meanful string
 func (p Pattern) String() string {
-	s := "Saved with HW Version: " + string(p.Version[:])
-	return s
+	return fmt.Sprintf("Saved with HW Version: %v\nTempo: %v", p.Header.Version, p.Header.Tempo)
 }
