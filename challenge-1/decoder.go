@@ -10,7 +10,8 @@ import (
 
 // DecoderSplice represents the structure that is going to decode a .splice file
 type DecoderSplice struct {
-	r io.Reader
+	r    io.Reader
+	file *os.File
 }
 
 func (d DecoderSplice) decode(p *Pattern) error {
@@ -20,7 +21,24 @@ func (d DecoderSplice) decode(p *Pattern) error {
 		return err
 	}
 
-	return nil
+	p.Tracks = []Track{}
+
+	for {
+		track := Track{}
+
+		err = d.decodeTrack(&track)
+
+		// If there is no byte left for read
+		if err == io.EOF {
+			return nil
+		}
+
+		if err != nil {
+			return err
+		}
+
+		p.Tracks = append(p.Tracks, track)
+	}
 }
 
 func (d DecoderSplice) decodeHeader(h *Header) error {
@@ -28,15 +46,56 @@ func (d DecoderSplice) decodeHeader(h *Header) error {
 		Splice  [6]byte
 		Size    int64
 		Version [32]byte
-		Tempo   float32
 	}
 
-	err := binary.Read(d.r, binary.LittleEndian, &header)
+	err := binary.Read(d.r, binary.BigEndian, &header)
+
+	if err != nil {
+		return err
+	}
+
+	var tempo float32
+
+	err = binary.Read(d.r, binary.LittleEndian, &tempo)
+
+	if err != nil {
+		return err
+	}
 
 	h.PatterSize = header.Size
 	h.Splice = header.Splice
 	h.Version = string(bytes.TrimRight(header.Version[:], string(0)))
-	h.Tempo = header.Tempo
+	h.Tempo = tempo
+
+	return nil
+}
+
+func (d DecoderSplice) decodeTrack(t *Track) error {
+	var trackHeader struct {
+		ID      uint8
+		NameLen uint32
+	}
+
+	err := binary.Read(d.r, binary.BigEndian, &trackHeader)
+
+	if err != nil {
+		return err
+	}
+
+	t.ID = trackHeader.ID
+	t.NameLength = trackHeader.NameLen
+
+	name := make([]byte, trackHeader.NameLen)
+
+	err = binary.Read(d.r, binary.BigEndian, name)
+
+	if err != nil {
+		return err
+	}
+
+	t.Name = string(name)
+
+	err = binary.Read(d.r, binary.BigEndian, &t.Quarters)
 
 	if err != nil {
 		return err
@@ -48,15 +107,13 @@ func (d DecoderSplice) decodeHeader(h *Header) error {
 func newDecoderSplice(filename string) (DecoderSplice, error) {
 	r, err := os.OpenFile(filename, os.O_RDONLY, 0666)
 
-	defer r.Close()
-
 	var ds DecoderSplice
 
 	if err != nil {
 		return ds, err
 	}
 
-	ds = DecoderSplice{r: bufio.NewReader(r)}
+	ds = DecoderSplice{r: bufio.NewReader(r), file: r}
 
 	return ds, nil
 }
@@ -72,6 +129,8 @@ func DecodeFile(path string) (*Pattern, error) {
 	if err != nil {
 		return p, err
 	}
+
+	defer ds.file.Close()
 
 	ds.decode(p)
 

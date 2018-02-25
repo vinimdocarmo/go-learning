@@ -15,12 +15,18 @@ type Header struct {
 	Tempo      float32
 }
 
-// Track is the high level representation of a sound track of an instrument
+// Quarter representes one quarter of 4 steps
+type Quarter [4]bool
+
+// Quarters represents an sclice of 4 quarters. 16 steps total
+type Quarters [4]Quarter
+
+// Track is the high level representation of a sound track of an Name
 type Track struct {
-	ID         int8
-	NameLength int32
-	Instrument string
-	Quarters   [4][4]byte
+	ID         uint8
+	NameLength uint32
+	Name       string
+	Quarters   Quarters
 }
 
 // Pattern is the high level representation of the
@@ -30,7 +36,38 @@ type Pattern struct {
 	Tracks []Track
 }
 
-// Format formats the splice file pattern to meanful string
 func (p Pattern) String() string {
-	return fmt.Sprintf("Saved with HW Version: %v\nTempo: %v", p.Header.Version, p.Header.Tempo)
+	s := fmt.Sprintf("Saved with HW Version: %v\nTempo: %v\n", p.Header.Version, p.Header.Tempo)
+
+	for _, t := range p.Tracks {
+		s += fmt.Sprintf("(%v) %v\t%v\n", t.ID, t.Name, t.Quarters)
+	}
+
+	return s
+}
+
+func (q Quarters) String() string {
+	var s string
+
+	for _, quarter := range q {
+		s += fmt.Sprintf("|%v", quarter)
+	}
+
+	s += "|"
+
+	return s
+}
+
+func (q Quarter) String() string {
+	var s string
+
+	for _, step := range q {
+		if step == true {
+			s += "x"
+		} else if step == false {
+			s += "-"
+		}
+	}
+
+	return s
 }
