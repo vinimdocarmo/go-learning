@@ -11,3 +11,8 @@ type EncoderSplice struct {
 	w    io.Writer
 	file *os.File
 }
+
+// EncodeFile encode a formatted drum file into a slice of bytes
+func EncodeFile(path string) ([]byte, error) {
+	return []byte{}, nil
+}
