@@ -9,10 +9,10 @@ import (
 // Header represents the head of the file
 // Header.Version has 32 bytes
 type Header struct {
-	Splice     [6]byte
-	PatterSize int64
-	Version    string
-	Tempo      float32
+	Splice      [6]byte
+	PatternSize int64
+	Version     string
+	Tempo       float32
 }
 
 // Quarter representes one quarter of 4 steps

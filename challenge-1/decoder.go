@@ -62,7 +62,7 @@ func (d DecoderSplice) decodeHeader(h *Header) error {
 		return err
 	}
 
-	h.PatterSize = header.Size
+	h.PatternSize = header.Size
 	h.Splice = header.Splice
 	h.Version = string(bytes.TrimRight(header.Version[:], string(0)))
 	h.Tempo = tempo
