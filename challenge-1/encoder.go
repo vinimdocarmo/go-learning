@@ -1,6 +1,7 @@
 package drum
 
 import (
+	"fmt"
 	"io"
 	"os"
 )
@@ -14,5 +15,19 @@ type EncoderSplice struct {
 
 // EncodeFile encode a formatted drum file into a slice of bytes
 func EncodeFile(path string) ([]byte, error) {
-	return []byte{}, nil
+	file, err := os.Open(path)
+
+	if err != nil {
+		panic(err)
+	}
+
+	defer file.Close()
+
+	p := Pattern{}
+
+	fmt.Fscanf(file, "Saved with HW Version: %s", &p.Header.Version)
+
+	b := []byte(p.Header.Version)
+
+	return b, nil
 }
