@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"io"
 	"os"
 )
 
 // EncoderSplice represents the structure that is going to encode
 // a splice formmatted text to a .splice file
 type EncoderSplice struct {
-	file        *os.File
+	r           io.Reader
 	buf         *bytes.Buffer
 	bytesWriten int
 }
@@ -52,18 +53,6 @@ func (es EncoderSplice) encode() error {
 }
 
 func (es EncoderSplice) writeSize() error {
-	fstat, err := es.file.Stat()
-
-	if err != nil {
-		return err
-	}
-
-	err = binary.Write(es.buf, binary.BigEndian, fstat.Size())
-
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -72,7 +61,7 @@ func (es EncoderSplice) writeVersion() error {
 	var version string
 	versionSize := 32
 
-	fmt.Fscanf(es.file, "Saved with HW Version: %s", &version)
+	fmt.Fscanf(es.r, "Saved with HW Version: %s", &version)
 
 	err := binary.Write(es.buf, binary.BigEndian, []byte(version))
 
@@ -95,7 +84,7 @@ func (es EncoderSplice) writeVersion() error {
 func (es EncoderSplice) writeTempo() error {
 	var tempo float32
 
-	fmt.Fscanf(es.file, "Tempo: %g", &tempo)
+	fmt.Fscanf(es.r, "Tempo: %g", &tempo)
 
 	err := binary.Write(es.buf, binary.LittleEndian, tempo)
 
@@ -107,7 +96,7 @@ func (es EncoderSplice) writeTempo() error {
 }
 
 func newEncoderSplice(filename string) (EncoderSplice, error) {
-	r, err := os.OpenFile(filename, os.O_RDONLY, 0666)
+	f, err := os.Open(filename)
 
 	var es EncoderSplice
 
@@ -115,7 +104,19 @@ func newEncoderSplice(filename string) (EncoderSplice, error) {
 		return es, err
 	}
 
-	es = EncoderSplice{bytesWriten: 0, file: r, buf: new(bytes.Buffer)}
+	defer f.Close()
+
+	br := new([]byte)
+
+	_, err = f.Read(*br)
+
+	if err != nil {
+		return es, err
+	}
+
+	r := bytes.NewReader(*br)
+
+	es = EncoderSplice{bytesWriten: 0, r: r, buf: new(bytes.Buffer)}
 
 	return es, nil
 }
@@ -127,8 +128,6 @@ func EncodeFile(path string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	defer es.file.Close()
 
 	err = es.encode()
 
