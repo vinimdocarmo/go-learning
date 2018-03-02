@@ -10,8 +10,9 @@ import (
 // EncoderSplice represents the structure that is going to encode
 // a splice formmatted text to a .splice file
 type EncoderSplice struct {
-	file *os.File
-	buf  *bytes.Buffer
+	file        *os.File
+	buf         *bytes.Buffer
+	bytesWriten int
 }
 
 func (es EncoderSplice) encode() error {
@@ -21,11 +22,15 @@ func (es EncoderSplice) encode() error {
 		return err
 	}
 
+	es.bytesWriten += 6 //6 bytes that represents the string "SPLICE"
+
 	err = es.writeSize()
 
 	if err != nil {
 		return err
 	}
+
+	es.bytesWriten += 8 //8 bytes that represents the size of size itself
 
 	err = es.writeVersion()
 
@@ -33,11 +38,15 @@ func (es EncoderSplice) encode() error {
 		return err
 	}
 
+	es.bytesWriten += 32 //32 bytes that represents the splice version
+
 	err = es.writeTempo()
 
 	if err != nil {
 		return err
 	}
+
+	es.bytesWriten += 4 //4 bytes that represents the tempo
 
 	return nil
 }
@@ -58,6 +67,7 @@ func (es EncoderSplice) writeSize() error {
 	return nil
 }
 
+// writeVersion writes into the buffer a big endian 32-bytes representing the splice version
 func (es EncoderSplice) writeVersion() error {
 	var version string
 	versionSize := 32
@@ -105,7 +115,7 @@ func newEncoderSplice(filename string) (EncoderSplice, error) {
 		return es, err
 	}
 
-	es = EncoderSplice{file: r, buf: new(bytes.Buffer)}
+	es = EncoderSplice{bytesWriten: 0, file: r, buf: new(bytes.Buffer)}
 
 	return es, nil
 }
