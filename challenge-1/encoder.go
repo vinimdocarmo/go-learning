@@ -13,7 +13,7 @@ import (
 type EncoderSplice struct {
 	r           io.Reader
 	buf         *bytes.Buffer
-	bytesWriten int
+	bytesWriten uint64
 }
 
 func (es EncoderSplice) encode() error {
@@ -24,8 +24,6 @@ func (es EncoderSplice) encode() error {
 	}
 
 	es.bytesWriten += 6 //6 bytes that represents the string "SPLICE"
-
-	err = es.writeSize()
 
 	if err != nil {
 		return err
@@ -49,10 +47,6 @@ func (es EncoderSplice) encode() error {
 
 	es.bytesWriten += 4 //4 bytes that represents the tempo
 
-	return nil
-}
-
-func (es EncoderSplice) writeSize() error {
 	return nil
 }
 
